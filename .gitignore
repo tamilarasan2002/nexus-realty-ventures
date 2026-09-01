@@ -1,0 +1,7 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# Original drop folder — these files are duplicated under public/documents/
+doc/

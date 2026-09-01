@@ -1,0 +1,25 @@
+# Netlify deploy config — this app is a pure static build, no functions needed.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# NOTE: deliberately no catch-all SPA rewrite.
+# The app uses HashRouter, so every real URL is "/" plus a #fragment and
+# index.html is always served from the root. Adding a /* -> /index.html
+# rewrite would break Vite's relative `base: './'`: a direct hit on
+# /view/foo would resolve "./assets/..." against /view/, giving 404s.
+
+# Self-hosted Tamil fonts never change once published.
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Source documents are versioned by hand, so revalidate rather than pin.
+[[headers]]
+  for = "/documents/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, must-revalidate"

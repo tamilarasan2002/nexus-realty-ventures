@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus Realty Ventures Private Limited</title>
+    <meta name="description" content="Nexus Realty Ventures Private Limited — residential real-estate development in Namakkal, Tamil Nadu. Company charter, governance policy and document portal." />
+  </head>
+  <body>
+    <script>
+      // Apply the stored theme before first paint to avoid a flash of the
+      // wrong palette. Kept inline and tiny on purpose.
+      (function () {
+        try {
+          var t = localStorage.getItem('nexus-theme')
+          if (t === 'light' || t === 'dark') {
+            document.documentElement.setAttribute('data-theme', t)
+          }
+        } catch (e) {}
+      })()
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
