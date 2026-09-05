@@ -10,6 +10,8 @@
  * Labels are kept exactly as printed so a generated PDF matches its template.
  */
 
+import { formatRupees, parseAmount } from './amountWords'
+
 export type FieldKind = 'text' | 'date' | 'amount' | 'select' | 'textarea' | 'derived'
 
 export interface FormField {
@@ -29,10 +31,17 @@ export interface FormField {
 export interface FormColumn {
   key: string
   label: string
-  kind: Exclude<FieldKind, 'derived' | 'textarea'>
+  kind: Exclude<FieldKind, 'textarea'>
   /** Percentage of the table width. */
   width?: number
   options?: string[]
+  /**
+   * Computed from the other cells in the same row — an outstanding balance,
+   * a budget remainder. Derived cells are shown read-only in the editor and
+   * recomputed on every keystroke, so a row can never be internally
+   * inconsistent. `rows` is the whole table, for ratio-style columns.
+   */
+  derive?: (row: FormValues, rows: FormValues[]) => string
 }
 
 export interface FormTable {
@@ -104,6 +113,43 @@ export function initialTables(def: FormDefinition): FormTables {
     out[t.key] = Array.from({ length: t.rows }, () =>
       Object.fromEntries(t.columns.map((c) => [c.key, ''])),
     )
+  }
+  return out
+}
+
+/** `minuend - subtrahend`, blank until both cells hold a number. */
+export function subtract(minuend: string, subtrahend: string): FormColumn['derive'] {
+  return (row) => {
+    const a = parseAmount(row[minuend] ?? '')
+    const b = parseAmount(row[subtrahend] ?? '')
+    return a === null || b === null ? '' : formatRupees(a - b)
+  }
+}
+
+/** This row's share of the column's total, as a percentage. */
+export function shareOf(key: string): FormColumn['derive'] {
+  return (row, rows) => {
+    const mine = parseAmount(row[key] ?? '')
+    if (mine === null) return ''
+    const total = rows.reduce((sum, r) => sum + (parseAmount(r[key] ?? '') ?? 0), 0)
+    if (!total) return ''
+    return `${((mine / total) * 100).toFixed(2).replace(/\.00$/, '')}%`
+  }
+}
+
+/** Applies each column's `derive`, so a table's computed cells stay in step. */
+export function resolveTables(def: FormDefinition, tables: FormTables): FormTables {
+  const out: FormTables = {}
+  for (const t of tablesOf(def)) {
+    const rows = tables[t.key] ?? []
+    const derived = t.columns.filter((c) => c.derive)
+    out[t.key] = derived.length
+      ? rows.map((r) => {
+          const next = { ...r }
+          for (const c of derived) next[c.key] = c.derive!(next, rows)
+          return next
+        })
+      : rows
   }
   return out
 }

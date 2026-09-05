@@ -7,6 +7,8 @@ import { useSession } from '../lib/useSession'
 import { getAllStatus } from '../lib/documentStore'
 import type { StoredDocument } from '../lib/documentStore'
 import { asset } from '../lib/asset'
+import { prependLetterhead } from '../lib/coverSheet'
+import { downloadPdf } from '../lib/signPdf'
 import { AdminSignIn } from './AdminSignIn'
 
 const TABS: { group: DocumentGroup; label: string }[] = [
@@ -44,6 +46,31 @@ export function DocumentList() {
       alive = false
     }
   }, [access])
+
+  const [preparing, setPreparing] = useState<string | null>(null)
+
+  /**
+   * Hands over the document the company would actually issue: the letterhead
+   * cover page followed by the current version — the signed one if it has been
+   * signed here, otherwise the pristine source.
+   */
+  const downloadWithLetterhead = async (doc: DocumentMeta) => {
+    setPreparing(doc.id)
+    try {
+      const current = stored[doc.id]
+      const bytes = current?.bytes ?? (await (await fetch(asset(doc.file))).arrayBuffer())
+      const withCover = await prependLetterhead(bytes, {
+        title: doc.titleTa,
+        subtitle: doc.titleEn,
+      })
+      downloadPdf(withCover, doc.originalName)
+    } catch {
+      // Fall back to the plain original rather than leaving the user stuck.
+      window.open(asset(doc.file), '_blank', 'noopener')
+    } finally {
+      setPreparing(null)
+    }
+  }
 
   const me = MEMBERS.find((m) => m.id === memberId) ?? null
   const openDoc = (doc: DocumentMeta) =>
@@ -218,9 +245,13 @@ export function DocumentList() {
                         ✎ Fill in
                       </button>
                     )}
-                    <a className="btn btn--sm" href={asset(doc.file)} download={doc.originalName}>
-                      ⬇ Original
-                    </a>
+                    <button
+                      className="btn btn--sm"
+                      disabled={preparing === doc.id}
+                      onClick={() => downloadWithLetterhead(doc)}
+                    >
+                      {preparing === doc.id ? 'Preparing…' : '⬇ Download'}
+                    </button>
                   </div>
                 </article>
               ))}

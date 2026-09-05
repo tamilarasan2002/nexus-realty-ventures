@@ -15,6 +15,7 @@ import { MEMBERS } from '../data/members'
 import { getMemberId } from '../lib/session'
 import type { Member } from '../data/members'
 import type { SignatureLayout } from '../lib/signatureSlots'
+import { prependLetterhead } from '../lib/coverSheet'
 import { applySignature, downloadPdf, readSignatures } from '../lib/signPdf'
 import type { SignatureRecord } from '../lib/signPdf'
 import { clearCurrent, getCurrent, putCurrent } from '../lib/documentStore'
@@ -224,7 +225,17 @@ export function SignPanel({ meta, layout, onDocumentChange }: Props) {
       setSourceName(filename)
       onDocumentChange(result.bytes)
 
-      downloadPdf(result.bytes, filename)
+      // The stored copy stays the plain signed PDF, so the next signer's
+      // stamp still lands on the coordinates measured from the original. Only
+      // the file handed to the user carries the letterhead cover.
+      downloadPdf(
+        await prependLetterhead(result.bytes.slice(), {
+          title: meta.titleTa,
+          subtitle: meta.titleEn,
+          note: `Signed by ${result.roster.length} of ${layout.slots.length}`,
+        }),
+        filename,
+      )
 
       setJustSigned(filename)
       setPickedSlotId(null)

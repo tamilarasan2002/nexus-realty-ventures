@@ -1351,6 +1351,19 @@ a { color: var(--brand-dark); }
 }
 .input--amount { font-variant-numeric: tabular-nums; }
 
+/* A computed cell — a balance, a share of the total. Rendered as an <output>
+   rather than a disabled input so it reads as a result, not a field you failed
+   to fill in. */
+.input--derived {
+  display: flex;
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  border-style: dashed;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
 .editor__actions {
   display: flex;
   gap: 8px;
@@ -1509,8 +1522,6 @@ a { color: var(--brand-dark); }
   flex-direction: column;
 }
 
-.receipt__logo { display: block; width: 594px; height: auto; margin: 0 auto; }
-.receipt__ho { text-align: center; font-weight: 700; font-size: 12pt; margin: 2px 0 0; }
 .receipt__title { text-align: center; font-weight: 700; font-size: 14pt; margin: 14px 0 0; }
 .receipt__title-en { text-align: center; font-size: 12pt; margin: 0 0 12px; }
 
@@ -1564,6 +1575,96 @@ a { color: var(--brand-dark); }
    (one Letter sheet) instead of spilling a few pixels onto page two. */
 .receipt__spacer { flex: 1 1 auto; min-height: 0; }
 
+/* ---- company letterhead on the first sheet ----
+   Literal colours on purpose: this sits inside the printed page, which is
+   always white regardless of the app's theme. Sized against the 816px sheet
+   and its 67.2px side padding. */
+.lh { position: relative; margin: -48px -67.2px 12px; padding: 0 67.2px; }
+
+/*
+ * Corner motif. Two right triangles sharing the top-left corner: the black one
+ * is inset on all three sides so an even orange band shows around it, matching
+ * the printed sheet. Insetting (rather than translating) is what keeps the
+ * black inside the orange hypotenuse instead of poking through it.
+ */
+.lh__corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 206px;
+  height: 206px;
+  background: #ff7a01;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.lh__wedge {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  width: 148px;
+  height: 148px;
+  background: #17181a;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+.lh__row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  /* Clears the wedge, whose bottom edge sits at 178px. */
+  padding-top: 150px;
+}
+
+/*
+ * The orange still reaches ~56px in at the text's own y, so the block is
+ * indented past it — otherwise the first characters sit on the orange.
+ */
+.lh__info { min-width: 0; margin-left: 38px; }
+.lh__name {
+  font-family: var(--font-ui);
+  font-size: 10.5pt;
+  font-weight: 800;
+  color: #111;
+  text-decoration: underline;
+  margin: 0 0 5px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.lh__line {
+  font-family: var(--font-ui);
+  font-size: 8pt;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.lh__ico { width: 11px; height: 11px; flex: none; }
+
+.lh__brand { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: none; }
+.lh__logo { width: 232px; height: auto; display: block; }
+.lh__socials { display: flex; gap: 10px; }
+.lh__social { width: 15px; height: 15px; }
+
+.lh__rule {
+  position: relative;
+  z-index: 1;
+  height: 2px;
+  background: #17181a;
+  /* Starts level with the contact block, as on the printed sheet. */
+  margin: 8px 0 0 38px;
+}
+
+/* Forms are denser than the receipt, so their masthead is a shade smaller. */
+.formdoc .lh__logo { width: 204px; }
+.formdoc .lh__name { font-size: 9.5pt; }
+.formdoc .lh__line { font-size: 7pt; }
+.formdoc .lh__social { width: 13px; height: 13px; }
+
 /* ---- paginated form document ---- */
 .formdoc-book { display: flex; flex-direction: column; gap: 20px; }
 
@@ -1612,8 +1713,6 @@ a { color: var(--brand-dark); }
    tighter density and a smaller letterhead to stay on a single Letter sheet.
    Scoped to .formdoc so the .docx-accurate receipt replica is untouched. */
 .formdoc { font-size: 9.5pt; }
-.formdoc .receipt__logo { width: 420px; }
-.formdoc .receipt__ho { font-size: 10pt; }
 .formdoc .receipt__title { font-size: 13pt; margin-top: 9px; }
 .formdoc .receipt__title-en { font-size: 10pt; margin-bottom: 6px; }
 .formdoc__heading {
@@ -1740,7 +1839,6 @@ a { color: var(--brand-dark); }
     min-height: 11in;
     padding: 0.5in 0.7in 0.7in;
   }
-  .receipt__logo { width: 6.19in; }
   .receipt-table { width: 6.5in; }
   .receipt__sign-img { height: 0.87in; }
   .doc-seal { right: 0.7in; bottom: 0.7in; width: 1.35in; }

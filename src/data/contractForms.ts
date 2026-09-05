@@ -11,6 +11,7 @@
  * Field labels and signatory lists are the documents' own.
  */
 import type { FormDefinition } from '../lib/formSchema'
+import { shareOf } from '../lib/formSchema'
 import { formatRupees, parseAmount } from '../lib/amountWords'
 
 /** Difference of two amount fields, formatted as the documents do. */
@@ -265,7 +266,7 @@ const projectAnnexure: FormDefinition = {
             ],
           },
           { key: 'amount', label: 'முதலீட்டுத் தொகை', kind: 'amount', width: 19 },
-          { key: 'ratio', label: 'முதலீட்டு விகிதம்', kind: 'text', width: 12 },
+          { key: 'ratio', label: 'முதலீட்டு விகிதம்', kind: 'text', width: 12, derive: shareOf('amount') },
           { key: 'plShare', label: 'லாப/நஷ்டப் பங்கு %', kind: 'text', width: 12 },
         ],
         rows: 1,

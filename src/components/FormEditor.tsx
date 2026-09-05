@@ -14,6 +14,7 @@ import { getMemberId } from '../lib/session'
 import {
   initialTables,
   initialValues,
+  resolveTables,
   resolveValues,
   tablesOf,
 } from '../lib/formSchema'
@@ -57,8 +58,12 @@ export function FormEditor({ meta, def }: Props) {
   const pageRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
-  /** Sheets in the document, reported by the renderer after it paginates. */
-  const [pageCount, setPageCount] = useState(1)
+  /**
+   * Sheets in the document, reported by the renderer once it has paginated.
+   * Zero means "still measuring" — exporting then would capture one oversized
+   * sheet holding the whole document.
+   */
+  const [pageCount, setPageCount] = useState(0)
 
   useEffect(() => {
     saveDraft(draftKey, draft)
@@ -76,6 +81,10 @@ export function FormEditor({ meta, def }: Props) {
 
   const me = MEMBERS.find((m) => m.id === getMemberId()) ?? null
   const resolved = useMemo(() => resolveValues(def, draft.values), [def, draft.values])
+  // Computed cells (an outstanding balance, a share of the total) are folded in
+  // here rather than written into the draft, so what is stored stays the set of
+  // numbers the user actually typed.
+  const resolvedTables = useMemo(() => resolveTables(def, draft.tables), [def, draft.tables])
 
   const setValue = (key: string, v: string) =>
     setDraft((d) => ({ ...d, values: { ...d.values, [key]: v } }))
@@ -271,7 +280,7 @@ export function FormEditor({ meta, def }: Props) {
               }
 
               const t = block.table
-              const rows = draft.tables[t.key] ?? []
+              const rows = resolvedTables[t.key] ?? []
               return (
                 <div className="form-section" key={`t${bi}`}>
                   <p className="form-section__title">{block.heading ?? 'Rows'}</p>
@@ -283,7 +292,11 @@ export function FormEditor({ meta, def }: Props) {
                           {t.columns.map((c) => (
                             <label className="rowedit__cell" key={c.key}>
                               <span>{c.label}</span>
-                              {c.kind === 'select' ? (
+                              {c.derive ? (
+                                <output className="input input--derived">
+                                  {row[c.key] || '—'}
+                                </output>
+                              ) : c.kind === 'select' ? (
                                 <select
                                   className="select"
                                   value={row[c.key] ?? ''}
@@ -445,10 +458,15 @@ export function FormEditor({ meta, def }: Props) {
           </div>
 
           <div className="editor__actions">
-            <button className="btn btn--primary" onClick={download} disabled={busy}>
-              {busy ? 'Generating…' : '⬇ Download PDF'}
+            <button
+              className="btn btn--primary"
+              onClick={download}
+              disabled={busy || pageCount === 0}
+              title={pageCount === 0 ? 'Laying the document out…' : 'Download as PDF'}
+            >
+              {busy ? 'Generating…' : pageCount === 0 ? 'Laying out…' : '⬇ Download PDF'}
             </button>
-            <button className="btn" onClick={printElement} disabled={busy}>
+            <button className="btn" onClick={printElement} disabled={busy || pageCount === 0}>
               🖨 Print / Save as PDF
             </button>
             <button
@@ -470,7 +488,8 @@ export function FormEditor({ meta, def }: Props) {
             <h2>Live preview</h2>
             <span className="topbar__spacer" />
             <span className="topbar__badge">
-              Letter · 8.5 × 11 in · {pageCount} page{pageCount === 1 ? '' : 's'}
+              Letter · 8.5 × 11 in ·{' '}
+              {pageCount === 0 ? 'laying out…' : `${pageCount} page${pageCount === 1 ? '' : 's'}`}
             </span>
           </div>
           <div className="preview-stage" ref={stageRef}>
@@ -479,13 +498,16 @@ export function FormEditor({ meta, def }: Props) {
               style={{
                 transform: `scale(${scale})`,
                 width: PAGE_WIDTH * scale,
-                height: (SHEET_H * pageCount + SHEET_GAP * (pageCount - 1)) * scale,
+                height:
+                  (SHEET_H * Math.max(1, pageCount) +
+                    SHEET_GAP * Math.max(0, pageCount - 1)) *
+                  scale,
               }}
             >
               <FormDocument
                 def={def}
                 values={resolved}
-                tables={draft.tables}
+                tables={resolvedTables}
                 signatures={draft.signatures}
                 innerRef={pageRef}
                 onPageCount={setPageCount}

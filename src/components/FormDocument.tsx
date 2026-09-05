@@ -13,11 +13,12 @@
  */
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Ref } from 'react'
-import { COMPANY } from '../data/company'
 import type { FormDefinition, FormTable, FormTables, FormValues } from '../lib/formSchema'
+import { resolveTables } from '../lib/formSchema'
 import { formatDate } from '../lib/receiptDerive'
 import { formatRupees, parseAmount } from '../lib/amountWords'
 import { asset } from '../lib/asset'
+import { Letterhead } from './Letterhead'
 
 export interface SignatureEntry {
   /** Trimmed ink as a PNG data URL. */
@@ -289,7 +290,10 @@ function SignBlockPlaceholder() {
 }
 
 export function FormDocument({ def, values, tables, signatures, innerRef, onPageCount }: Props) {
-  const items = useMemo(() => buildFlow(def, values, tables), [def, values, tables])
+  // Resolved here as well as in the editor, so a saved draft rendered straight
+  // to PDF gets the same computed cells the editor showed.
+  const rows = useMemo(() => resolveTables(def, tables), [def, tables])
+  const items = useMemo(() => buildFlow(def, values, rows), [def, values, rows])
   const [heights, setHeights] = useState<Record<string, number> | null>(null)
   const measureRef = useRef<HTMLDivElement>(null)
   const headRef = useRef<HTMLDivElement>(null)
@@ -309,12 +313,18 @@ export function FormDocument({ def, values, tables, signatures, innerRef, onPage
     if (headRef.current) setHeadH(headRef.current.offsetHeight)
   }, [items, signKey])
 
-  const pages = heights ? paginate(items, heights, headH) : [items]
+  const measured = heights !== null
+  const pages = measured ? paginate(items, heights, headH) : [items]
   const total = pages.length
 
+  /*
+   * Report only once the flow has actually been measured. Until then the
+   * single fallback sheet holds every item and overflows its box, so the
+   * editor must not offer an export of it.
+   */
   useLayoutEffect(() => {
-    onPageCount?.(total)
-  }, [total, onPageCount])
+    onPageCount?.(measured ? total : 0)
+  }, [measured, total, onPageCount])
 
   return (
     <div className="formdoc-book" ref={innerRef} data-print-root>
@@ -322,7 +332,7 @@ export function FormDocument({ def, values, tables, signatures, innerRef, onPage
       <div className="formdoc-measure" ref={measureRef} aria-hidden="true">
         <div className="receipt formdoc formdoc--measure">
           <div ref={headRef}>
-            <Letterhead def={def} />
+            <DocHead def={def} />
           </div>
           {items.map((item) => (
             <div data-flow={item.key} key={item.key}>
@@ -337,9 +347,14 @@ export function FormDocument({ def, values, tables, signatures, innerRef, onPage
       </div>
 
       {pages.map((pageItems, pi) => (
-        <div className="receipt formdoc" data-page={pi + 1} key={pi}>
+        <div
+          className="receipt formdoc"
+          /* Only a settled sheet is exportable — see onPageCount above. */
+          {...(measured ? { 'data-page': pi + 1 } : {})}
+          key={pi}
+        >
           {pi === 0 ? (
-            <Letterhead def={def} />
+            <DocHead def={def} />
           ) : (
             <p className="formdoc__runhead">
               {def.titleTa} <span>{def.titleEn}</span>
@@ -367,11 +382,11 @@ export function FormDocument({ def, values, tables, signatures, innerRef, onPage
   )
 }
 
-function Letterhead({ def }: { def: FormDefinition }) {
+/** First-sheet masthead: the company letterhead plus the document's title. */
+function DocHead({ def }: { def: FormDefinition }) {
   return (
     <>
-      <img className="receipt__logo" src={asset('assets/logo.png')} alt="Nexus Realty Ventures" />
-      <p className="receipt__ho">{COMPANY.headOffice.replace('–', '-')}</p>
+      <Letterhead />
       <p className="receipt__title">{def.titleTa}</p>
       <p className="receipt__title-en">{def.titleEn}</p>
     </>

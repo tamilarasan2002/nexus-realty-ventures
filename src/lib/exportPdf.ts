@@ -52,11 +52,22 @@ export async function exportElementToPdf(
   if (sheets.length > 0) {
     const pdf = new jsPDF({ unit: 'pt', format: 'letter', compress: true })
     for (let i = 0; i < sheets.length; i += 1) {
-      const canvas = await html2canvas(sheets[i], {
+      const sheet = sheets[i]
+      const canvas = await html2canvas(sheet, {
         scale,
         backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,
+        /*
+         * Pin the capture box to the sheet's own border box. Left to itself
+         * html2canvas measures the scroll size, so a sheet whose content
+         * overflows — which happens for the split second before pagination
+         * settles — was captured at its full content height and then stretched
+         * across the page, throwing every proportion out.
+         */
+        width: sheet.offsetWidth,
+        height: sheet.offsetHeight,
+        windowWidth: sheet.offsetWidth,
         ignoreElements: (el) => el.hasAttribute?.('data-export-ignore'),
       })
       if (i > 0) pdf.addPage()

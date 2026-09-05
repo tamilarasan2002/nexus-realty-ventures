@@ -13,6 +13,7 @@ import type { ReceiptDisplay } from '../lib/receiptDerive'
 import { formatDate } from '../lib/receiptDerive'
 import type { SignatureEntry } from './FormDocument'
 import { asset } from '../lib/asset'
+import { Letterhead } from './Letterhead'
 
 interface Props {
   display: ReceiptDisplay
@@ -47,8 +48,7 @@ export function ReceiptDocument({ display, signature, innerRef }: Props) {
 
   return (
     <div className="receipt" ref={innerRef} data-print-root>
-      <img className="receipt__logo" src={asset('assets/logo.png')} alt="Nexus Realty Ventures" />
-      <p className="receipt__ho">{RECEIPT_STATIC.headOffice}</p>
+      <Letterhead />
 
       <p className="receipt__title">{RECEIPT_STATIC.titleTa}</p>
       <p className="receipt__title-en">{RECEIPT_STATIC.titleEn}</p>

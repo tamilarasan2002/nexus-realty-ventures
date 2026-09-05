@@ -16,6 +16,10 @@ export const COMPANY = {
   headOffice: 'Namakkal, Tamil Nadu, India – 637001',
   headOfficeTa: 'நாமக்கல், தமிழ்நாடு, இந்தியா – 637001',
   sector: 'Residential real-estate development',
+  /* Contact details, taken from the company's own printed letterhead. */
+  phone: '+91 6382 197 033',
+  email: 'nexusrealventures@gmail.com',
+  website: 'https://nexus-realty-ventures.netlify.app/#/about',
 } as const
 
 export interface Caveat {

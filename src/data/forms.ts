@@ -13,6 +13,7 @@
  * any form.
  */
 import type { FormDefinition } from '../lib/formSchema'
+import { shareOf, subtract } from '../lib/formSchema'
 import { formatRupees, parseAmount } from '../lib/amountWords'
 
 /** Sums a set of amount fields and formats the result as the templates do. */
@@ -94,7 +95,7 @@ const financialStatus: FormDefinition = {
           },
           { key: 'budget', label: 'பட்ஜெட் (Budget)', kind: 'amount', width: 22 },
           { key: 'spent', label: 'இதுவரை செலவு', kind: 'amount', width: 22 },
-          { key: 'balance', label: 'மீதி', kind: 'amount', width: 22 },
+          { key: 'balance', label: 'மீதி', kind: 'amount', width: 22, derive: subtract('budget', 'spent') },
         ],
         rows: 1,
         totalOf: 'budget',
@@ -175,7 +176,7 @@ const investmentRegister: FormDefinition = {
           },
           { key: 'commitment', label: 'மொத்த உறுதி', kind: 'amount', width: 16 },
           { key: 'received', label: 'இதுவரை பெற்றது', kind: 'amount', width: 16 },
-          { key: 'outstanding', label: 'நிலுவை', kind: 'amount', width: 14 },
+          { key: 'outstanding', label: 'நிலுவை', kind: 'amount', width: 14, derive: subtract('commitment', 'received') },
           { key: 'lastReceipt', label: 'கடைசி ரசீது எண்', kind: 'text', width: 12 },
         ],
         // Open-ended: the template's note says to extend rows as needed.
@@ -430,7 +431,7 @@ const profitLoss: FormDefinition = {
         columns: [
           { key: 'name', label: 'உறுப்பினர் பெயர்', kind: 'text', width: 26 },
           { key: 'investment', label: 'முதலீடு', kind: 'amount', width: 19 },
-          { key: 'ratio', label: 'முதலீட்டு விகிதம்', kind: 'text', width: 17 },
+          { key: 'ratio', label: 'முதலீட்டு விகிதம்', kind: 'text', width: 17, derive: shareOf('investment') },
           { key: 'share', label: 'லாப/நஷ்டப் பங்கு', kind: 'amount', width: 19 },
           { key: 'payable', label: 'செலுத்த வேண்டிய இறுதித் தொகை', kind: 'amount', width: 19 },
         ],
